@@ -4,6 +4,8 @@ import Image from 'next/image'
 import RightArrow from '../components/commons/RightArrow'
 import useFunctionReads from '../hooks/usefunctionRead'
 import { useAccount, useContractRead } from 'wagmi'
+import useFunctionWrite from '../hooks/usefunctionwrite'
+import { useState } from 'react'
 
 
 
@@ -15,8 +17,29 @@ const Home: NextPage = () => {
   console.log(ownerAddress, "owner address");
   const {address} = useAccount();
   console.log(address ,"current address");
+  const {writeAsync, data:writeData, isLoading:writeLoading, isError:writeError} = useFunctionWrite("Auction")
+  const [bidamount, setamount] = useState(0);
+  const {writeAsync:bidasync, isLoading:bidloading} = useFunctionWrite("bid", bidamount  ?? 0)
+
 
   const isAdmin = ownerAddress === address ? true : false;
+
+
+  const startAuction = async () => {
+    try{
+      const tx  = await writeAsync?.()
+      console.log(tx)
+      const wait = await tx?.wait()
+      console.log(wait)
+    }
+    catch(e){}
+    finally{}
+  }
+
+  const handleEvent=(e:any)=>{
+    e.preventDefault()
+    setamount(e.target.value);
+  }
 
   const statusButton =() =>{
     if(isloading){
@@ -36,7 +59,7 @@ const Home: NextPage = () => {
     if(isAdmin === true && !started){
       return(
         <div className='m-4'>
-          <button className='border bg-slate-500 rounded-none p-3'> start auction  
+          <button onClick={() => writeAsync?.()} className='border bg-slate-500 rounded-none p-3'>{writeLoading ? "Loading..." : "start auction"} 
           {/* <RightArrow />  */}
           </button>
         </div>
@@ -83,12 +106,14 @@ const Home: NextPage = () => {
             <span className='mx-1 text-2xl text-red-500'>3:00</span>
             <span>ETH</span>
           </div>
-          <form action="" className='mt-4'>
-            <input type="text" placeholder='enter your bid' className='p-3 border-x-2' />
+            <input  value={bidamount} onChange={handleEvent} type="text" placeholder='enter your bid' className='p-3 border-x-2 mt-4' />
             <div>
-            <button className='text-2xl bg-gray-600 p-2 mt-4 border-0 bg'>place bid</button>
-          </div>
-          </form>         
+            <button
+            onSubmit={() => bidasync?.()}  
+            type="button"
+            disabled={bidloading || !bidamount || !started}
+             className='text-2xl bg-gray-600 p-2 mt-4 border-0 bg'>place bid</button>
+          </div>        
         </div>
     </div>
   )
